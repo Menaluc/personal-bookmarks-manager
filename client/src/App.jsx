@@ -12,6 +12,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetchBookmarks();
@@ -39,36 +41,64 @@ function App() {
 
   async function handleAddBookmark(e) {
     e.preventDefault();
-
+  
     const trimmedUrl = url.trim();
     if (!trimmedUrl) return;
-
+  
     const tags = tagsInput
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-
+  
     try {
       setSubmitting(true);
       setError("");
-
-      const response = await fetch(`${API_BASE}/bookmarks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: trimmedUrl,
-          tags,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add bookmark");
+  
+      if (editingId) {
+        const response = await fetch(`${API_BASE}/bookmarks/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: trimmedUrl,
+            tags,
+          }),
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to update bookmark");
+        }
+  
+        const updatedBookmark = await response.json();
+  
+        setBookmarks((prev) =>
+          prev.map((bookmark) =>
+            bookmark.id === editingId ? updatedBookmark : bookmark
+          )
+        );
+  
+        setEditingId(null);
+      } else {
+        const response = await fetch(`${API_BASE}/bookmarks`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: trimmedUrl,
+            tags,
+          }),
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to add bookmark");
+        }
+  
+        const createdBookmark = await response.json();
+        setBookmarks((prev) => [createdBookmark, ...prev]);
       }
-
-      const createdBookmark = await response.json();
-      setBookmarks((prev) => [createdBookmark, ...prev]);
+  
       setUrl("");
       setTagsInput("");
     } catch (err) {
@@ -95,6 +125,14 @@ function App() {
       setError(err.message || "Something went wrong");
     }
   }
+
+
+  function handleStartEdit(bookmark) {
+    setEditingId(bookmark.id);
+    setUrl(bookmark.url || "");
+    setTagsInput(Array.isArray(bookmark.tags) ? bookmark.tags.join(", ") : "");
+    }
+    
 
   const allTags = useMemo(() => {
     const tagsSet = new Set();
@@ -140,7 +178,9 @@ function App() {
         </header>
 
         <section style={styles.card}>
-          <h2 style={styles.sectionTitle}>Add bookmark</h2>
+          <h2 style={styles.sectionTitle}>
+             {editingId ? "Edit bookmark" : "Add bookmark"}
+         </h2>
 
           <form onSubmit={handleAddBookmark}>
             <div style={styles.fieldGroup}>
@@ -164,10 +204,31 @@ function App() {
                 style={styles.input}
               />
             </div>
+            <div style={styles.formActions}>
+  <button type="submit" style={styles.primaryButton} disabled={submitting}>
+    {submitting
+      ? editingId
+        ? "Saving..."
+        : "Adding..."
+      : editingId
+      ? "Save changes"
+      : "Add bookmark"}
+  </button>
 
-            <button type="submit" style={styles.primaryButton} disabled={submitting}>
-              {submitting ? "Adding..." : "Add bookmark"}
-            </button>
+  {editingId && (
+    <button
+      type="button"
+      onClick={() => {
+        setEditingId(null);
+        setUrl("");
+        setTagsInput("");
+      }}
+      style={styles.cancelButton}
+    >
+      Cancel
+    </button>
+  )}
+</div>
           </form>
         </section>
 
@@ -227,12 +288,21 @@ function App() {
                         </a>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteBookmark(bookmark.id)}
-                        style={styles.deleteButton}
-                      >
-                        Delete
-                      </button>
+                      <div style={styles.actions}>
+                        <button
+                          onClick={() => handleStartEdit(bookmark)}
+                          style={styles.editButton}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteBookmark(bookmark.id)}
+                          style={styles.deleteButton}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
 
                     <p style={styles.bookmarkDescription}>
@@ -421,6 +491,38 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
   },
+  formActions: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  
+  actions: {
+    display: "flex",
+    gap: "8px",
+  },
+  
+  editButton: {
+    backgroundColor: "#f59e0b",
+    color: "#rgb(161, 225, 212)",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+    color: "#111827",
+    border: "none",
+    borderRadius: "12px",
+    padding: "12px 18px",
+    fontSize: "1rem",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+
   errorBox: {
     backgroundColor: "#fee2e2",
     color: "#991b1b",
