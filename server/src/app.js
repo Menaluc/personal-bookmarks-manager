@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const bookmarksRoutes = require("./routes/bookmarks.routes");
 const tagsRoutes = require("./routes/tags.routes");
 const { notFoundHandler } = require("./middleware/notFound");
@@ -16,8 +17,11 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/bookmarks", bookmarksRoutes);
 app.use("/api/tags", tagsRoutes);
+const publicPath = path.join(__dirname, "../public");
+app.use(express.static(publicPath));
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
 
 module.exports = app;
