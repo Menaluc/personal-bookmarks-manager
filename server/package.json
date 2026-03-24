@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Personal Bookmarks Manager backend",
+  "main": "src/index.js",
+  "scripts": {
+    "build:client": "node scripts/build-client.js",
+    "build:prod": "npm run build:client",
+    "dev": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0"
+  }
+}
