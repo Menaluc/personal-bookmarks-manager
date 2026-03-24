@@ -1,5 +1,7 @@
 # Personal Bookmarks Manager
 
+Live Demo: [View the app here](https://personal-bookmarks-manager-production.up.railway.app/) 
+
 A full-stack web application for saving, organizing, and managing bookmarks with tags.
 
 ## Overview
@@ -109,7 +111,7 @@ client/.env
 ```
 With:
 ```
-VITE_API_BASE_URL=http://localhost:4000/api
+VITE_API_BASE=http://localhost:4000/api
 ```
 In production, the app can use /api when frontend and backend are served from the same domain.
 
@@ -152,5 +154,5 @@ During the development of this assignment, Cursor AI was used as a supporting to
 
 Author
 
-GitHub: Menaluc
+GitHub:[Menaluc](https://github.com/Menaluc)
 
