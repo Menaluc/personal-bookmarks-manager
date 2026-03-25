@@ -1,3 +1,4 @@
+
 # Personal Bookmarks Manager
 
 Live Demo: [View the app here](https://personal-bookmarks-manager-production.up.railway.app/) 
@@ -21,7 +22,7 @@ The app was built as a full-stack project with a React frontend, Express backend
 - Search bookmarks by title, description, or URL
 - Filter bookmarks by tag
 - Edit bookmarks 
-- Delete bookmarks
+- Delete bookmarks with confirmation
 - Responsive UI for desktop and mobile
 - Persistent storage using SQLite
 
@@ -30,7 +31,7 @@ The app was built as a full-stack project with a React frontend, Express backend
 ### Frontend
 - React
 - Vite
-- CSS
+- Tailwind CSS
 
 ### Backend
 - Node.js
@@ -119,10 +120,10 @@ In production, the app can use /api when frontend and backend are served from th
 
 The app includes handling for common issues such as:
 
-invalid URLs
-metadata fetch failures
-duplicate bookmarks
-API request failures
+- invalid URLs
+- metadata fetch failures
+- duplicate bookmarks
+- API request failures
 
 ## Deployment
 
@@ -152,7 +153,7 @@ The application currently supports the complete core flow end-to-end:
 
 During the development of this assignment, Cursor AI was used as a supporting tool mainly for debugging, code improvement, and speeding up the development process, while the final solution was manually reviewed, understood, and integrated.
 
-Author
+## Author
 
 GitHub:[Menaluc](https://github.com/Menaluc)
 
