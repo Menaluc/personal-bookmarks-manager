@@ -2,9 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
+async function errorMessageFromResponse(response) {
+  try {
+    const data = await response.json();
+    if (data?.error?.message) return data.error.message;
+  } catch {
+    // ignore parse errors
+  }
+  return `Request failed (${response.status})`;
+}
+
 function App() {
   const [url, setUrl] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [titleInput, setTitleInput] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
 
@@ -12,25 +24,33 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  
+
   const [editingId, setEditingId] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   useEffect(() => {
     fetchBookmarks();
   }, []);
 
+  function resetEditForm() {
+    setEditingId(null);
+    setUrl("");
+    setTagsInput("");
+    setTitleInput("");
+    setDescriptionInput("");
+  }
+
   async function fetchBookmarks() {
     try {
       setLoading(true);
       setError("");
-     
+
       const response = await fetch(`${API_BASE}/bookmarks`);
       if (!response.ok) {
-        throw new Error("Failed to load bookmarks");
+        throw new Error(await errorMessageFromResponse(response));
       }
 
       const data = await response.json();
-      console.log("bookmarks from server:",data);
       setBookmarks(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || "Something went wrong");
@@ -41,19 +61,19 @@ function App() {
 
   async function handleAddBookmark(e) {
     e.preventDefault();
-  
+
     const trimmedUrl = url.trim();
     if (!trimmedUrl) return;
-  
+
     const tags = tagsInput
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-  
+
     try {
       setSubmitting(true);
       setError("");
-  
+
       if (editingId) {
         const response = await fetch(`${API_BASE}/bookmarks/${editingId}`, {
           method: "PUT",
@@ -62,23 +82,25 @@ function App() {
           },
           body: JSON.stringify({
             url: trimmedUrl,
+            title: titleInput.trim(),
+            description: descriptionInput.trim(),
             tags,
           }),
         });
-  
+
         if (!response.ok) {
-          throw new Error("Failed to update bookmark");
+          throw new Error(await errorMessageFromResponse(response));
         }
-  
+
         const updatedBookmark = await response.json();
-  
+
         setBookmarks((prev) =>
           prev.map((bookmark) =>
             bookmark.id === editingId ? updatedBookmark : bookmark
           )
         );
-  
-        setEditingId(null);
+
+        resetEditForm();
       } else {
         const response = await fetch(`${API_BASE}/bookmarks`, {
           method: "POST",
@@ -90,17 +112,16 @@ function App() {
             tags,
           }),
         });
-  
+
         if (!response.ok) {
-          throw new Error("Failed to add bookmark");
+          throw new Error(await errorMessageFromResponse(response));
         }
-  
+
         const createdBookmark = await response.json();
         setBookmarks((prev) => [createdBookmark, ...prev]);
+        setUrl("");
+        setTagsInput("");
       }
-  
-      setUrl("");
-      setTagsInput("");
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -108,31 +129,39 @@ function App() {
     }
   }
 
-  async function handleDeleteBookmark(id) {
+  async function handleConfirmDelete() {
+    if (deleteTargetId == null) return;
+
     try {
       setError("");
 
-      const response = await fetch(`${API_BASE}/bookmarks/${id}`, {
+      const response = await fetch(`${API_BASE}/bookmarks/${deleteTargetId}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete bookmark");
+        throw new Error(await errorMessageFromResponse(response));
       }
 
-      setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== id));
+      setBookmarks((prev) =>
+        prev.filter((bookmark) => bookmark.id !== deleteTargetId)
+      );
+      setDeleteTargetId(null);
     } catch (err) {
       setError(err.message || "Something went wrong");
+      setDeleteTargetId(null);
     }
   }
-
 
   function handleStartEdit(bookmark) {
     setEditingId(bookmark.id);
     setUrl(bookmark.url || "");
-    setTagsInput(Array.isArray(bookmark.tags) ? bookmark.tags.join(", ") : "");
-    }
-    
+    setTitleInput(bookmark.title || "");
+    setDescriptionInput(bookmark.description || "");
+    setTagsInput(
+      Array.isArray(bookmark.tags) ? bookmark.tags.join(", ") : ""
+    );
+  }
 
   const allTags = useMemo(() => {
     const tagsSet = new Set();
@@ -142,7 +171,7 @@ function App() {
       bookmarkTags.forEach((tag) => tagsSet.add(tag));
     });
 
-    return Array.from(tagsSet);
+    return Array.from(tagsSet).sort();
   }, [bookmarks]);
 
   const filteredBookmarks = useMemo(() => {
@@ -167,85 +196,122 @@ function App() {
     });
   }, [bookmarks, search, selectedTag]);
 
+  const inputClass =
+    "w-full rounded-xl border border-slate-300 px-3.5 py-3 text-base text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 box-border";
+
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <h1 style={styles.mainTitle}>Personal Bookmarks Manager</h1>
-          <p style={styles.subtitle}>
+    <div className="min-h-screen bg-slate-100 px-4 py-4 font-sans text-slate-900 sm:px-6 sm:py-6">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            Personal Bookmarks Manager
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 sm:text-base">
             Save links, auto-fetch metadata, and organize with tags.
           </p>
         </header>
 
-        <section style={styles.card}>
-          <h2 style={styles.sectionTitle}>
-             {editingId ? "Edit bookmark" : "Add bookmark"}
-         </h2>
+        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">
+            {editingId ? "Edit bookmark" : "Add bookmark"}
+          </h2>
 
-          <form onSubmit={handleAddBookmark}>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>URL</label>
+          <form onSubmit={handleAddBookmark} className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                URL
+              </label>
               <input
                 type="url"
                 placeholder="https://example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                style={styles.input}
+                className={inputClass}
               />
             </div>
 
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Tags (comma separated)</label>
+            {editingId ? (
+              <>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Description
+                  </label>
+                  <textarea
+                    value={descriptionInput}
+                    onChange={(e) => setDescriptionInput(e.target.value)}
+                    rows={3}
+                    className={inputClass + " resize-y min-h-[5rem]"}
+                  />
+                </div>
+              </>
+            ) : null}
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Tags (comma separated)
+              </label>
               <input
                 type="text"
                 placeholder="work, docs, reading"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                style={styles.input}
+                className={inputClass}
               />
             </div>
-            <div style={styles.formActions}>
-  <button type="submit" style={styles.primaryButton} disabled={submitting}>
-    {submitting
-      ? editingId
-        ? "Saving..."
-        : "Adding..."
-      : editingId
-      ? "Save changes"
-      : "Add bookmark"}
-  </button>
 
-  {editingId && (
-    <button
-      type="button"
-      onClick={() => {
-        setEditingId(null);
-        setUrl("");
-        setTagsInput("");
-      }}
-      style={styles.cancelButton}
-    >
-      Cancel
-    </button>
-  )}
-</div>
+            <div className="flex flex-wrap gap-2.5">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting
+                  ? editingId
+                    ? "Saving..."
+                    : "Adding..."
+                  : editingId
+                    ? "Save changes"
+                    : "Add bookmark"}
+              </button>
+
+              {editingId ? (
+                <button
+                  type="button"
+                  onClick={resetEditForm}
+                  className="rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-base font-semibold text-slate-800 hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </form>
         </section>
 
-        <section style={styles.card}>
-          <div style={styles.filtersRow}>
+        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               type="text"
               placeholder="Search by title, description, or URL"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={styles.searchInput}
+              className={`${inputClass} sm:min-w-0 sm:flex-1`}
             />
 
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              style={styles.select}
+              className={`${inputClass} sm:w-48 sm:flex-none`}
             >
               <option value="all">All tags</option>
               {allTags.map((tag) => (
@@ -257,280 +323,134 @@ function App() {
           </div>
         </section>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
+        {error ? (
+          <div
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            role="alert"
+          >
+            {error}
+          </div>
+        ) : null}
 
         <section>
           {loading ? (
-            <div style={styles.emptyState}>Loading bookmarks...</div>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-slate-600">
+              Loading bookmarks...
+            </div>
           ) : filteredBookmarks.length === 0 ? (
-            <div style={styles.emptyState}>No bookmarks found.</div>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-slate-600">
+              No bookmarks found.
+            </div>
           ) : (
-            <div style={styles.bookmarksList}>
+            <ul className="grid list-none gap-4 p-0 sm:grid-cols-1">
               {filteredBookmarks.map((bookmark) => {
                 const bookmarkTags = Array.isArray(bookmark.tags)
                   ? bookmark.tags
                   : [];
 
                 return (
-                  <article key={bookmark.id} style={styles.bookmarkCard}>
-                    <div style={styles.bookmarkHeader}>
-                      <div>
-                        <h3 style={styles.bookmarkTitle}>
+                  <li
+                    key={bookmark.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900">
                           {bookmark.title || bookmark.url}
                         </h3>
                         <a
                           href={bookmark.url}
                           target="_blank"
                           rel="noreferrer"
-                          style={styles.bookmarkLink}
+                          className="mt-1 inline-block break-all text-sm text-blue-600 hover:underline"
                         >
                           {bookmark.url}
                         </a>
                       </div>
 
-                      <div style={styles.actions}>
+                      <div className="flex shrink-0 flex-wrap gap-2">
                         <button
+                          type="button"
                           onClick={() => handleStartEdit(bookmark)}
-                          style={styles.editButton}
+                          className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600"
                         >
                           Edit
                         </button>
 
                         <button
-                          onClick={() => handleDeleteBookmark(bookmark.id)}
-                          style={styles.deleteButton}
+                          type="button"
+                          onClick={() => setDeleteTargetId(bookmark.id)}
+                          className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
                         >
                           Delete
                         </button>
                       </div>
                     </div>
 
-                    <p style={styles.bookmarkDescription}>
+                    <p className="my-3 text-sm text-slate-600">
                       {bookmark.description || "No description"}
                     </p>
 
-                    <div style={styles.tagsRow}>
+                    <div className="flex flex-wrap gap-2">
                       {bookmarkTags.length > 0 ? (
                         bookmarkTags.map((tag) => (
-                          <span key={tag} style={styles.tagChip}>
+                          <span
+                            key={`${bookmark.id}-${tag}`}
+                            className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-900"
+                          >
                             {tag}
                           </span>
                         ))
                       ) : (
-                        <span style={styles.noTagsText}>No tags</span>
+                        <span className="text-sm text-slate-400">No tags</span>
                       )}
                     </div>
-                  </article>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </section>
       </div>
+
+      {deleteTargetId != null ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <h3
+              id="delete-dialog-title"
+              className="text-lg font-semibold text-slate-900"
+            >
+              Delete bookmark?
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              This cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: "#f3f4f6",
-    padding: "16px",
-    fontFamily: "Inter, Arial, sans-serif",
-  },
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
-  },
-  header: {
-    marginBottom: "18px",
-  },
-  mainTitle: {
-    margin: 0,
-    fontSize: "2rem",
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  subtitle: {
-    marginTop: "8px",
-    marginBottom: 0,
-    color: "#475569",
-    fontSize: "1rem",
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #d1d5db",
-    borderRadius: "16px",
-    padding: "18px",
-    marginBottom: "18px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    marginBottom: "20px",
-    fontSize: "1.1rem",
-    color: "#0f172a",
-  },
-  fieldGroup: {
-    marginBottom: "16px",
-  },
-  label: {
-    display: "block",
-    marginBottom: "8px",
-    fontSize: "0.95rem",
-    color: "#1e293b",
-  },
-  input: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #cbd5e1",
-    fontSize: "1rem",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  primaryButton: {
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "12px",
-    padding: "12px 18px",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  filtersRow: {
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: "260px",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #cbd5e1",
-    fontSize: "1rem",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  select: {
-    width: "180px",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #cbd5e1",
-    fontSize: "1rem",
-    backgroundColor: "#fff",
-  },
-  emptyState: {
-    backgroundColor: "#ffffff",
-    border: "1px dashed #cbd5e1",
-    borderRadius: "16px",
-    padding: "28px",
-    textAlign: "center",
-    color: "#475569",
-  },
-  bookmarksList: {
-    display: "grid",
-    gap: "16px",
-  },
-  bookmarkCard: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #d1d5db",
-    borderRadius: "16px",
-    padding: "18px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-  },
-  bookmarkHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "16px",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-  },
-  bookmarkTitle: {
-    margin: 0,
-    fontSize: "1.1rem",
-    color: "#0f172a",
-  },
-  bookmarkLink: {
-    display: "inline-block",
-    marginTop: "8px",
-    color: "#2563eb",
-    textDecoration: "none",
-    wordBreak: "break-all",
-  },
-  bookmarkDescription: {
-    marginTop: "14px",
-    marginBottom: "14px",
-    color: "#475569",
-  },
-  tagsRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  tagChip: {
-    backgroundColor: "#e0e7ff",
-    color: "#3730a3",
-    borderRadius: "999px",
-    padding: "6px 10px",
-    fontSize: "0.9rem",
-    fontWeight: "500",
-  },
-  noTagsText: {
-    color: "#94a3b8",
-    fontSize: "0.9rem",
-  },
-  deleteButton: {
-    backgroundColor: "#ef4444",
-    color: "#fff",
-    border: "none",
-    borderRadius: "10px",
-    padding: "10px 14px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  formActions: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  
-  actions: {
-    display: "flex",
-    gap: "8px",
-  },
-  
-  editButton: {
-    backgroundColor: "#f59e0b",
-    color: "#rgb(161, 225, 212)",
-    border: "none",
-    borderRadius: "10px",
-    padding: "10px 14px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  
-  cancelButton: {
-    backgroundColor: "#e5e7eb",
-    color: "#111827",
-    border: "none",
-    borderRadius: "12px",
-    padding: "12px 18px",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-
-  errorBox: {
-    backgroundColor: "#fee2e2",
-    color: "#991b1b",
-    border: "1px solid #fecaca",
-    borderRadius: "12px",
-    padding: "12px 14px",
-    marginBottom: "16px",
-  },
-};
 
 export default App;
