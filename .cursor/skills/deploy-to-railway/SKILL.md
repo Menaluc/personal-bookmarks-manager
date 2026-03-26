@@ -17,7 +17,7 @@ This repository is a full-stack monorepo with:
 - `client/` - React + Vite frontend
 - `server/` - Node.js + Express backend
 
-Production runs as a single service:
+Production runs as a single Express server process:
 - the frontend is built from `client/`
 - the build output is copied into `server/public`
 - the Express server serves both API routes and static frontend files
@@ -48,21 +48,26 @@ Before deploying, verify:
 - the server starts with `npm run start`
 - the app listens on `process.env.PORT`
 - the API is available under `/api/*`
+- production frontend API calls should use `/api/*` (default when `VITE_API_BASE` is unset)
 - static files are served from `server/public`
-- production uses a single Railway service
 
 ## Database expectations
 In production:
 - database path should resolve to `/data/bookmarks.db`
+- ensure Railway mounts a writable volume at `/data` so SQLite persists across restarts
+- with WAL mode, expect `bookmarks.db-wal` and `bookmarks.db-shm` alongside the DB file
 - local development uses the server data directory unless `DB_FILE_PATH` is provided
 
 ## Verification checklist
 After deployment changes, verify:
 - `GET /api/health` works
+- `GET /api/bookmarks` works
+- `GET /api/tags` works
 - bookmark routes still work
 - tag routes still work
 - frontend loads from `/`
 - static assets load correctly
+- startup logs show no schema/init/seed failures
 - no existing functionality is broken
 
 ## Troubleshooting
@@ -84,7 +89,7 @@ If frontend works but API fails, check:
 
 If API works but frontend routes fail, verify:
 - static files exist in `server/public`
-- production routing for non-API frontend routes works correctly
+- this server does not implement SPA fallback for arbitrary client-side routes; only `/` and assets should be requested
 
 ## Guardrails
 - Do not split the app into multiple Railway services unless explicitly requested
