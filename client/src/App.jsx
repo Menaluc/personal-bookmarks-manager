@@ -197,22 +197,22 @@ function App() {
   }, [bookmarks, search, selectedTag]);
 
   const inputClass =
-    "w-full rounded-xl border border-slate-300 px-3.5 py-3 text-base text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 box-border";
+    "w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100 box-border transition-colors";
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-4 font-sans text-slate-900 sm:px-6 sm:py-6">
+    <div className="min-h-screen bg-slate-50 px-4 py-4 font-sans text-slate-900 sm:px-6 sm:py-6">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 sm:mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Personal Bookmarks Manager
           </h1>
-          <p className="mt-1 text-sm text-slate-600 sm:text-base">
+          <p className="mt-1 text-sm text-slate-500 sm:text-base">
             Save links, auto-fetch metadata, and organize with tags.
           </p>
         </header>
 
-        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">
+        <section className="mb-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <h2 className="mb-4 text-lg font-medium text-slate-700">
             {editingId ? "Edit bookmark" : "Add bookmark"}
           </h2>
 
@@ -274,7 +274,7 @@ function App() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-sky-400 px-4 py-3 text-base font-semibold text-white shadow-sm shadow-sky-200/50 hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60 transition-colors focus:ring-4 focus:ring-sky-100"
               >
                 {submitting
                   ? editingId
@@ -289,7 +289,7 @@ function App() {
                 <button
                   type="button"
                   onClick={resetEditForm}
-                  className="rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-base font-semibold text-slate-800 hover:bg-slate-200"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700 hover:bg-slate-100 transition-colors focus:ring-4 focus:ring-slate-100"
                 >
                   Cancel
                 </button>
@@ -298,7 +298,7 @@ function App() {
           </form>
         </section>
 
-        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <section className="mb-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               type="text"
@@ -325,7 +325,7 @@ function App() {
 
         {error ? (
           <div
-            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
             role="alert"
           >
             {error}
@@ -334,11 +334,11 @@ function App() {
 
         <section>
           {loading ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-slate-600">
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-white py-10 text-center text-slate-500">
               Loading bookmarks...
             </div>
           ) : filteredBookmarks.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-slate-600">
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-white py-10 text-center text-slate-500">
               No bookmarks found.
             </div>
           ) : (
@@ -351,7 +351,7 @@ function App() {
                 return (
                   <li
                     key={bookmark.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+                    className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
@@ -362,7 +362,7 @@ function App() {
                           href={bookmark.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-1 inline-block break-all text-sm text-blue-600 hover:underline"
+                          className="mt-1 inline-block break-all text-sm text-sky-700 hover:underline"
                         >
                           {bookmark.url}
                         </a>
@@ -372,7 +372,7 @@ function App() {
                         <button
                           type="button"
                           onClick={() => handleStartEdit(bookmark)}
-                          className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+                          className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors focus:ring-4 focus:ring-indigo-100"
                         >
                           Edit
                         </button>
@@ -380,7 +380,7 @@ function App() {
                         <button
                           type="button"
                           onClick={() => setDeleteTargetId(bookmark.id)}
-                          className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                          className="rounded-2xl bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors focus:ring-4 focus:ring-red-100"
                         >
                           Delete
                         </button>
@@ -396,7 +396,7 @@ function App() {
                         bookmarkTags.map((tag) => (
                           <span
                             key={`${bookmark.id}-${tag}`}
-                            className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-900"
+                            className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700"
                           >
                             {tag}
                           </span>
@@ -415,12 +415,12 @@ function App() {
 
       {deleteTargetId != null ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-dialog-title"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
             <h3
               id="delete-dialog-title"
               className="text-lg font-semibold text-slate-900"
@@ -434,14 +434,14 @@ function App() {
               <button
                 type="button"
                 onClick={() => setDeleteTargetId(null)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors focus:ring-4 focus:ring-slate-100"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                className="rounded-2xl bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors focus:ring-4 focus:ring-red-100"
               >
                 Delete
               </button>
