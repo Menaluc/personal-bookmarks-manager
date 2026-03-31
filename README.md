@@ -94,8 +94,9 @@ npm start --prefix server
 ``
 
 3. #### Run the frontend
+```
 npm run dev --prefix client
-
+```
 
 ## Production Build
 From the project root:
